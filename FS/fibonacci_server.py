@@ -1,10 +1,9 @@
 # Ruturaj Vasant Tambe DCN Lab 3 N10333254
 from flask import Flask, request, jsonify
-import json
 
 app = Flask(__name__)
 
-# Simple Fibonacci function
+# Function to calculate Fibonacci number
 def fibonacci(n):
     if n <= 0:
         return 0
@@ -16,33 +15,39 @@ def fibonacci(n):
             a, b = b, a + b
         return b
 
-# Register endpoint
-@app.route('/register', methods=['PUT'])
-def register():
-    data = request.get_json()
-    hostname = data.get('hostname')
-    ip = data.get('ip')
-    as_ip = data.get('as_ip')
-    as_port = data.get('as_port')
+# Fibonacci storage
+fibonacci_numbers = {}
 
-    if not hostname or not ip or not as_ip or not as_port:
-        return jsonify({'error': 'Missing parameters'}), 400
+@app.route('/fibonacci/register', methods=['POST'])
+def register_fibonacci():
+    number = request.form.get('NUMBER')
 
-    # Here you would typically send the registration to the AS via UDP
-    # This is simplified for illustration purposes
-    print(f"Registered {hostname} with IP {ip} to AS {as_ip}:{as_port}")
-    return jsonify({'message': 'Registration successful'}), 201
+    try:
+        number = int(number)
+        if number < 0:
+            return jsonify({"error": "Invalid input"}), 400
 
-# Fibonacci endpoint
+        # Calculate and store Fibonacci number
+        fib_value = fibonacci(number)
+        fibonacci_numbers[number] = fib_value
+
+        return jsonify({"message": "Fibonacci number registered successfully", "fibonacci": fib_value}), 200
+
+    except ValueError:
+        return jsonify({"error": "Invalid input"}), 400
+
 @app.route('/fibonacci', methods=['GET'])
 def get_fibonacci():
     number = request.args.get('number')
-    if number is None or not number.isdigit():
+    
+    if not number or not number.isdigit():
         return jsonify({'error': 'Invalid input'}), 400
     
     number = int(number)
-    result = fibonacci(number)
-    return jsonify({'fibonacci': result}), 200
+    if number in fibonacci_numbers:
+        return jsonify({'fibonacci': fibonacci_numbers[number]}), 200
+    else:
+        return jsonify({'error': 'Fibonacci number not found'}), 404
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=9090)
+    app.run(host='0.0.0.0', port=9090, debug=True)
